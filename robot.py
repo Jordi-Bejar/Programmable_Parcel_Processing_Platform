@@ -107,8 +107,8 @@ class Robot:
     
         max_iterations = 
         tolerance = 
-        joint_lower_limits = 
-        joint_upper_limits = 
+        joint_lower_limits = np.radians([0, 0, 0, 0, 0])
+        joint_upper_limits = np.radians([90, 90, 90, 90, 90])
         learning_rate = 0.1
 
         joint_angles = seed_joints.copy()
@@ -185,4 +185,7 @@ class TrajectoryGenerator:
         return trajectory 
 
     def follow_joint_trajectory():
-        # for Cary Script
+        for joint_angles in trajectory:
+            for i, angle in enumerate(np.degrees(joint_angles)):
+                send_motor_command(i+1, angle, speed=1.0)
+            time.sleep(self.dt)

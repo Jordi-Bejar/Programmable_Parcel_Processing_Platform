@@ -1,5 +1,7 @@
 import serial
 import time
+import numpy as np
+from robot import Robot, TrajectoryGenerator
 
 # Set your serial port 
 # Please check the port you connec the arduino board before running the code
@@ -58,3 +60,39 @@ send_motor_command(5, 36090, 1.0)
 # Close serial connection
 arduino.close()
 print("Connection closed.")
+
+# ========== MAIN FUNCTION ==========
+def main():
+    # Initialize robot & trajectory objects
+    robot = Robot()
+    traj_gen = TrajectoryGenerator()
+
+    # Define target pose (4x4 transformation matrix)
+    target_pose = np.eye(4)
+    target_pose[:3, 3] = [0.2, 0.1, 0.2]  # Desired XYZ position of end-effector (example)
+
+    # Initial joint seed (e.g., all zeros)
+    seed = np.zeros(robot.dof)
+
+    # Inverse Kinematics
+    solution = robot._inverse_kinematics(target_pose, seed)
+
+    if solution is None:
+        print("IK failed. Could not reach the desired pose.")
+        return
+
+    print("IK solution (radians):", solution)
+
+    # Trajectory generation
+    trajectory = traj_gen.generate_trapezoidal_trajectory(seed, solution, traj_gen.max_vel, traj_gen.max_acc, duration=4.0)
+
+    # Send joint angles to Arduino
+    print("Sending trajectory to Arduino...")
+    traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
+    print("Motion complete.")
+
+# ========== RUN MAIN ==========
+if __name__ == "__main__":
+    main()
+    arduino.close()
+    print("Connection closed.")
