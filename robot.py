@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import time
 
 class Robot:
     def __init__(self):
@@ -8,6 +9,7 @@ class Robot:
         self.l_1 = 0.254
         self.l_2 = 0.33
         self.l_3 = 0
+        self.l_4 = 0
 
     def forward_kinematics(self, thetas):
         dh_parameters = self._get_dh_parameters(thetas)
@@ -109,8 +111,8 @@ class Robot:
 
     def _inverse_kinematics(self, target_pose, seed_joints):
     
-        max_iterations = 1000
-        tolerance = 0.01
+        max_iterations = 20
+        tolerance = 1
         joint_lower_limits = np.radians([0, 0, 0, 0, 0])
         joint_upper_limits = np.radians([90, 90, 90, 90, 90])
         learning_rate = 0.1
@@ -199,7 +201,7 @@ class TrajectoryGenerator:
 
         return trajectory 
 
-    def follow_joint_trajectory():
+    def follow_joint_trajectory(self, trajectory, send_motor_command):
         for joint_angles in trajectory:
             for i, angle in enumerate(np.degrees(joint_angles)):
                 send_motor_command(i+1, angle, speed=1.0)

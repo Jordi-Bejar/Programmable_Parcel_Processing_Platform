@@ -44,22 +44,22 @@ def send_motor_command(motor_num, angle, speed):
 #send_motor_command(4, 360, 0.5)  # Move Motor 4, full rotation at 80% speed
 #time.sleep(1)
 #send_motor_command(5, 360, 0.5)
-send_motor_command(2, 3600, 1.0)
-send_motor_command(3, 3600, 1.0)
-time.sleep(2)
-send_motor_command(1, 90, 1.0)
-send_motor_command(4, -90, 1.0)
-time.sleep(4)
-send_motor_command(1, 3510, 1.0)
-send_motor_command(4, 36090, 1.0)
-time.sleep(4)
-send_motor_command(5, -90, 1.0)
-time.sleep(2)
-send_motor_command(5, 36090, 1.0)
+#send_motor_command(2, 3600, 1.0)
+#send_motor_command(3, 3600, 1.0)
+#time.sleep(2)
+#send_motor_command(1, 90, 1.0)
+#send_motor_command(4, -90, 1.0)
+#time.sleep(4)
+#send_motor_command(1, 3510, 1.0)
+#send_motor_command(4, 36090, 1.0)
+#time.sleep(4)
+#send_motor_command(5, -90, 1.0)
+#time.sleep(2)
+#send_motor_command(5, 36090, 1.0)
 
 # Close serial connection
-arduino.close()
-print("Connection closed.")
+#arduino.close()
+#print("Connection closed.")
 
 # ========== MAIN FUNCTION ==========
 def main():
