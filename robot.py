@@ -4,15 +4,19 @@ import numpy as np
 class Robot:
     def __init__(self):
         self.dof = 5
-        self.dh_parameters = np.array([])
+        self.l_0 = 0.089
+        self.l_1 = 0.254
+        self.l_2 = 0.33
+        self.l_3 = 0
 
     def forward_kinematics(self, thetas):
-        frames = np.zeros((4, 4, len(self.dh_parameters)+1))
+        dh_parameters = self._get_dh_parameters(thetas)
+        frames = np.zeros((4, 4, len(dh_parameters)+1))
         frames[:, :, 0] = np.eye(4)
         H = np.eye(4)
 
         for i in range(self.dof):
-            a, alpha, d, theta = self.dh_parameters[i,:]
+            a, alpha, d, theta = dh_parameters[i,:]
 
             Rot_x = np.array([
                 [1,0,0,0],
@@ -105,8 +109,8 @@ class Robot:
 
     def _inverse_kinematics(self, target_pose, seed_joints):
     
-        max_iterations = 
-        tolerance = 
+        max_iterations = 1000
+        tolerance = 0.01
         joint_lower_limits = np.radians([0, 0, 0, 0, 0])
         joint_upper_limits = np.radians([90, 90, 90, 90, 90])
         learning_rate = 0.1
@@ -150,12 +154,22 @@ class Robot:
             joint_angles = np.clip(joint_angles, 0.95*joint_lower_limits, 0.95*joint_upper_limits)
 
         return None
+    
+    def _get_dh_parameters(self, thetas):
+        dh_matrix = np.array([
+            [0, np.pi/2, self.l_1, thetas[0]],
+            [self.l_2, 0, 0, thetas[1]],
+            [0, np.pi/2, 0, thetas[2] + np.pi/2],
+            [0, -np.pi/2, self.l_3 + self.l_4, thetas[3]]
+        ])
+    
+        return dh_matrix
 
 class TrajectoryGenerator:
     def __init__(self, dt=0.02):
         self.dt = dt
-        self.max_vel = 
-        self.max_acc = 
+        self.max_vel = 0.1
+        self.max_acc = 0.1
     
     def generate_trapezoidal_trajectory(self, q_start, q_end, max_vel, max_acc, duration):
 
