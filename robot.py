@@ -157,10 +157,11 @@ class Robot:
     
     def _get_dh_parameters(self, thetas):
         dh_matrix = np.array([
-            [0, np.pi/2, self.l_1, thetas[0]],
-            [self.l_2, 0, 0, thetas[1]],
-            [0, np.pi/2, 0, thetas[2] + np.pi/2],
-            [0, -np.pi/2, self.l_3 + self.l_4, thetas[3]]
+            [0, np.pi/2, self.l_1, thetas[0]], 
+            [self.l_2, 0, 0, thetas[1]], 
+            [self.l_3, 0, 0, thetas[2]], 
+            [0, np.pi/2, 0, thetas[3] + np.pi/2],
+            [0, 0, self.l_3 + self.l_4, thetas[4]]
         ])
     
         return dh_matrix
