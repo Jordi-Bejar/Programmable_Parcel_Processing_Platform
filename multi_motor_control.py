@@ -32,6 +32,59 @@ def send_motor_command(motor_num, angle, speed):
     if response:
         print(f"Arduino: {response}")
 
+def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_command):
+    lift_height = 0.05    
+    pickup_z = 0.10        
+    dropoff_z = 0.10       
+    seed = np.zeros(robot.dof)
+
+    # 1. Go to pickup pose
+    pickup_pose = np.eye(4)
+    pickup_pose[:3, 3] = np.array([x_start, y_start, pickup_z])
+    q_pickup = robot._inverse_kinematics(pickup_pose, seed)
+    if q_pickup is None:
+        print("Failed IK for pickup.")
+        return
+
+    # 2. Lift up
+    lift_pose = np.eye(4)
+    lift_pose[:3, 3] = np.array([x_start, y_start, pickup_z + lift_height])
+    q_lift = robot._inverse_kinematics(lift_pose, q_pickup)
+    if q_lift is None:
+        print("Failed IK for lift.")
+        return
+
+    # 3. Move to above drop-off
+    drop_lift_pose = np.eye(4)
+    drop_lift_pose[:3, 3] = np.array([x_end, y_end, dropoff_z + lift_height])
+    q_drop_lift = robot._inverse_kinematics(drop_lift_pose, q_lift)
+    if q_drop_lift is None:
+        print("Failed IK for move to drop zone.")
+        return
+
+    # 4. Lower down at drop-off
+    drop_pose = np.eye(4)
+    drop_pose[:3, 3] = np.array([x_end, y_end, dropoff_z])
+    q_drop = robot._inverse_kinematics(drop_pose, q_drop_lift)
+    if q_drop is None:
+        print("Failed IK for final drop.")
+        return
+
+    steps = [
+        (seed, q_pickup),
+        (q_pickup, q_lift),
+        (q_lift, q_drop_lift),
+        (q_drop_lift, q_drop)
+    ]
+
+    for q_start, q_end in steps:
+        traj = traj_gen.generate_trapezoidal_trajectory(
+            q_start, q_end, traj_gen.max_vel, traj_gen.max_acc, duration=2.0
+        )
+        traj_gen.follow_joint_trajectory(traj, send_motor_command)
+
+    print("Completed full motion from pickup to dropoff.")
+
 # Example commands
 
 #send_motor_command(1, 180, 1.0)
@@ -56,6 +109,16 @@ def send_motor_command(motor_num, angle, speed):
 #send_motor_command(5, -90, 1.0)
 #time.sleep(2)
 #send_motor_command(5, 36090, 1.0)
+
+#move_from_to(
+#     x_start=0.15,
+#     y_start=0.05,
+#     x_end=0.25,
+#     y_end=-0.05,
+#     robot=robot,
+#     traj_gen=traj_gen,
+#     send_motor_command=send_motor_command
+# )
 
 # Close serial connection
 #arduino.close()
