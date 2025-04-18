@@ -5,7 +5,7 @@ from robot import Robot, TrajectoryGenerator
 
 # Set your serial port 
 # Please check the port you connec the arduino board before running the code
-SERIAL_PORT = "COM3"  # For Windows: "COMx", for Linux/Mac: "/dev/ttyUSB0"
+SERIAL_PORT = "/dev/tty.usbmodem1101"  # For Windows: "COMx", for Linux/Mac: "/dev/ttyUSB0"
 BAUD_RATE = 9600  # Must match the Arduino baud rate
 
 # Open serial connection
@@ -124,35 +124,122 @@ def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_com
 #arduino.close()
 #print("Connection closed.")
 
-# ========== MAIN FUNCTION ==========
-def main():
-    # Initialize robot & trajectory objects
+def accumErrorTest():
     robot = Robot()
     traj_gen = TrajectoryGenerator()
 
     # Define target pose (4x4 transformation matrix)
-    target_pose = np.eye(4)
-    target_pose[:3, 3] = [0.2, 0.1, 0.2]  # Desired XYZ position of end-effector (example)
+    target_pose1 = np.eye(4)
+    target_pose1[:3, 3] = [0.4, 0, 0.3]  # Desired XYZ position of end-effector (example)
+    target_pose2 = np.eye(4)
+    target_pose2[:3, 3] = [0.2, 0, 0.6]  # Desired XYZ position of end-effector (example)
 
     # Initial joint seed (e.g., all zeros)
     seed = np.zeros(robot.dof)
 
     # Inverse Kinematics
-    solution = robot._inverse_kinematics(target_pose, seed)
+    solution1 = robot._inverse_kinematics(target_pose1, seed)
+    solution2 = robot._inverse_kinematics(target_pose2, seed)
 
-    if solution is None:
+    if solution1 is None or solution2 is None:
         print("IK failed. Could not reach the desired pose.")
         return
 
-    print("IK solution (radians):", solution)
+    print("IK solution (radians):", solution1, solution2)
+    trajectory0 = traj_gen.generate_trapezoidal_trajectory(seed, solution1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
+    trajectoryF = traj_gen.generate_trapezoidal_trajectory(solution1, solution2, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
+    trajectoryR = traj_gen.generate_trapezoidal_trajectory(solution2, solution1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
+    i = 0
+    traj_gen.follow_joint_trajectory(trajectory0, send_motor_command)
+    while true:
+        h = input()
+        print(i)
+        traj_gen.follow_joint_trajectory(trajectoryF, send_motor_command)
+        traj_gen.follow_joint_trajectory(trajectoryR, send_motor_command)
+        i = i + 1
+
+
+
+#def itemFragileTest():
+
+
 
     # Trajectory generation
-    trajectory = traj_gen.generate_trapezoidal_trajectory(seed, solution, traj_gen.max_vel, traj_gen.max_acc, duration=4.0)
+    # trajectory = traj_gen.generate_trapezoidal_trajectory(seed, solution, traj_gen.max_vel, traj_gen.max_acc, duration=4.0)
+    # traj_gen.follow_joint_trajectory(trajectory, send_motor_command)  
 
-    # Send joint angles to Arduino
-    print("Sending trajectory to Arduino...")
+    # while :
+
+
+def weightVerTest():
+    robot = Robot()
+    traj_gen = TrajectoryGenerator()
+
+    target_pose1 = [0, 3.14159/4, 0, 0, 0]
+    target_pose2 = [0, 0, 3.14159/2, 0, 0]
+    target_pose3 = [0, 0, 0, 3.14159/2, 0]
+
+    # Initial joint seed (e.g., all zeros)
+    seed = np.zeros(robot.dof)
+
+    trajectory = traj_gen.generate_trapezoidal_trajectory(seed, target_pose1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
     traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
-    print("Motion complete.")
+    print("Joint 2 test")
+    input()
+
+    trajectory = traj_gen.generate_trapezoidal_trajectory(target_pose1, target_pose2, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
+    traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
+    print("Joint 3 test")
+    input()
+
+    trajectory = traj_gen.generate_trapezoidal_trajectory(target_pose2, target_pose3, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
+    traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
+    print("Joint 4 test")
+    input()
+    
+
+def pickPlaceTest():
+    target_pose1 = np.eye(4)
+    target_pose1[:3, 3] = [0.3, 0, 0.1]  # Desired XYZ position of end-effector (example)
+
+    trajectory = traj_gen.generate_trapezoidal_trajectory(seed, target_pose1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
+    traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
+
+    while true:
+
+        move_from_to(
+            x_start=0.3,
+            y_start=0,
+            x_end=0.6,
+            y_end=0,
+            robot=robot,
+            traj_gen=traj_gen,
+            send_motor_command=send_motor_command
+        )
+        print("(waiting)")
+        input()
+        print("(moving)")
+
+        move_from_to(
+            x_start=0.6,
+            y_start=0,
+            x_end=0.3,
+            y_end=0,
+            robot=robot,
+            traj_gen=traj_gen,
+            send_motor_command=send_motor_command
+        )
+
+        print("(waiting)")
+        input()
+        print("(moving)")
+
+
+# ========== MAIN FUNCTION ==========
+def main():
+    accumErrorTest()
+    # Initialize robot & trajectory objects
+    
 
 # ========== RUN MAIN ==========
 if __name__ == "__main__":
