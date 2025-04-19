@@ -2,6 +2,7 @@ import serial
 import time
 import numpy as np
 from robot import Robot, TrajectoryGenerator
+import utils 
 
 # Set your serial port 
 # Please check the port you connec the arduino board before running the code
@@ -37,53 +38,31 @@ def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_com
     pickup_z = 0.10        
     dropoff_z = 0.10       
     seed = np.zeros(robot.dof)
+    R = np.eye(3)
+
+    current_joint = seed
 
     # 1. Go to pickup pose
-    pickup_pose = np.eye(4)
-    pickup_pose[:3, 3] = np.array([x_start, y_start, pickup_z])
-    q_pickup = robot._inverse_kinematics(pickup_pose, seed)
-    if q_pickup is None:
-        print("Failed IK for pickup.")
-        return
-
-    # 2. Lift up
-    lift_pose = np.eye(4)
-    lift_pose[:3, 3] = np.array([x_start, y_start, pickup_z + lift_height])
-    q_lift = robot._inverse_kinematics(lift_pose, q_pickup)
-    if q_lift is None:
-        print("Failed IK for lift.")
-        return
-
-    # 3. Move to above drop-off
-    drop_lift_pose = np.eye(4)
-    drop_lift_pose[:3, 3] = np.array([x_end, y_end, dropoff_z + lift_height])
-    q_drop_lift = robot._inverse_kinematics(drop_lift_pose, q_lift)
-    if q_drop_lift is None:
-        print("Failed IK for move to drop zone.")
-        return
-
-    # 4. Lower down at drop-off
-    drop_pose = np.eye(4)
-    drop_pose[:3, 3] = np.array([x_end, y_end, dropoff_z])
-    q_drop = robot._inverse_kinematics(drop_pose, q_drop_lift)
-    if q_drop is None:
-        print("Failed IK for final drop.")
-        return
+    pickup = [x_start, y_start, pickup_z]
+    pickup_above = [x_start, y_start, pickup_z + lift_height]
+    drop_above = [x_end, y_end, dropoff_z + lift_height]
+    drop = [x_end, y_end, dropoff_z]
 
     steps = [
-        (seed, q_pickup),
-        (q_pickup, q_lift),
-        (q_lift, q_drop_lift),
-        (q_drop_lift, q_drop)
+        (current_joint, pickup_above, pickup),      # move down
+        (None, pickup, pickup_above),               # lift up
+        (None, pickup_above, drop_above),           # move across
+        (None, drop_above, drop),                   # move down
     ]
 
-    for q_start, q_end in steps:
-        traj = traj_gen.generate_trapezoidal_trajectory(
-            q_start, q_end, traj_gen.max_vel, traj_gen.max_acc, duration=2.0
-        )
+    for i, (q_guess, pt1, pt2) in enumerate(steps):
+        if q_guess is None:
+            q_guess = current_joint
+        traj = traj_gen.generate_straight_line(pt1, pt2, q_guess, R, duration=2)
         traj_gen.follow_joint_trajectory(traj, send_motor_command)
+        current_joint = traj[-1]
 
-    print("Completed full motion from pickup to dropoff.")
+    print("Completed full straight-line motion from pickup to dropoff.")
 
 # Example commands
 
@@ -127,39 +106,42 @@ def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_com
 def accumErrorTest():
     robot = Robot()
     traj_gen = TrajectoryGenerator()
-
-    # Define target pose (4x4 transformation matrix)
-    target_pose1 = np.eye(4)
-    target_pose1[:3, 3] = [0.4, 0, 0.3]  # Desired XYZ position of end-effector (example)
-    target_pose2 = np.eye(4)
-    target_pose2[:3, 3] = [0.2, 0, 0.6]  # Desired XYZ position of end-effector (example)
-
-    # Initial joint seed (e.g., all zeros)
     seed = np.zeros(robot.dof)
+    R = np.eye(3)
 
-    # Inverse Kinematics
-    solution1 = robot._inverse_kinematics(target_pose1, seed)
-    solution2 = robot._inverse_kinematics(target_pose2, seed)
+    start_pos = [0.4, 0, 0.3]
+    end_pos = [0.2, 0, 0.6]
 
-    if solution1 is None or solution2 is None:
-        print("IK failed. Could not reach the desired pose.")
+    # Compute and print IK solutions for start and end
+    pose_start = robot._get_transform(R, start_pos)
+    pose_end = robot._get_transform(R, end_pos)
+
+    ik_start = robot._inverse_kinematics(pose_start, seed)
+    ik_end = robot._inverse_kinematics(pose_end, seed)
+
+    print("=== IK Solutions ===")
+    print("Start Pose:", start_pos)
+    print("Start Joint Solution:", ik_start)
+    print("End Pose:", end_pos)
+    print("End Joint Solution:", ik_end)
+
+    if ik_start is None or ik_end is None:
+        print("IK failed for one of the poses.")
         return
 
-    print("IK solution (radians):", solution1, solution2)
-    trajectory0 = traj_gen.generate_trapezoidal_trajectory(seed, solution1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
-    trajectoryF = traj_gen.generate_trapezoidal_trajectory(solution1, solution2, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
-    trajectoryR = traj_gen.generate_trapezoidal_trajectory(solution2, solution1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
-    i = 0
-    traj_gen.follow_joint_trajectory(trajectory0, send_motor_command)
-    while true:
-        h = input()
-        print(i)
-        traj_gen.follow_joint_trajectory(trajectoryF, send_motor_command)
-        traj_gen.follow_joint_trajectory(trajectoryR, send_motor_command)
-        i = i + 1
+    # Move forward
+    traj_forward = traj_gen.generate_straight_line(start_pos, end_pos, ik_start, R, duration=3)
+    traj_gen.follow_joint_trajectory(traj_forward, send_motor_command)
+    current_joint = traj_forward[-1]
 
+    while True:
+        input("Press enter to go backward...")
+        traj_backward = traj_gen.generate_straight_line(end_pos, start_pos, current_joint, R, duration=3)
+        traj_gen.follow_joint_trajectory(traj_backward, send_motor_command)
+        current_joint = traj_backward[-1]
 
-
+        print("Returning to original pose. Joint state after reverse:")
+        print(current_joint)
 #def itemFragileTest():
 
 
@@ -205,7 +187,7 @@ def pickPlaceTest():
     trajectory = traj_gen.generate_trapezoidal_trajectory(seed, target_pose1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
     traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
 
-    while true:
+    while True:
 
         move_from_to(
             x_start=0.3,

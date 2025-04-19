@@ -1,6 +1,7 @@
-import sys
 import numpy as np
 import time
+from scipy.interpolate import CubicSpline
+import utils 
 
 class Robot:
     def __init__(self):
@@ -168,6 +169,15 @@ class Robot:
     
         return dh_matrix
 
+    def _get_transform(self,R,d):
+        transform = np.array([
+            [R[0,0],R[0,1],R[0,2],d[0]],
+            [R[1,0],R[1,1],R[1,2],d[1]],
+            [R[2,0],R[2,1],R[2,2],d[2]],
+            [0,0,0,1]
+        ])
+        return transform
+
 class TrajectoryGenerator:
     def __init__(self, dt=0.02):
         self.dt = dt
@@ -255,6 +265,8 @@ class TrajectoryGenerator:
         return trajectory
 
 
+    def get
+    
     def follow_joint_trajectory(self, trajectory, send_motor_command):
         for joint_angles in trajectory:
             for i, angle in enumerate(np.degrees(joint_angles)):
