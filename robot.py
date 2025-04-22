@@ -212,60 +212,75 @@ class TrajectoryGenerator:
         return trajectory 
 
     def generate_straight_line(self, start_point, end_point, current_joint, start_R, end_R=None, duration=None):
-        
         kinematics = Robot()
         times = np.arange(0, duration + self.dt, self.dt)
-        t_ends = np.array([times[0],times[-1]])
-        x0,y0,z0 = start_point
-        x1,y1,z1 = end_point
-        bc_type = ((1,0),(1,0))
+        t_ends = np.array([times[0], times[-1]])
+        x0, y0, z0 = start_point
+        x1, y1, z1 = end_point
+        bc_type = ((1, 0), (1, 0))
 
-        cs_x = CubicSpline(t_ends,[x0,x1],bc_type=bc_type)
-        cs_y = CubicSpline(t_ends,[y0,y1],bc_type=bc_type)
-        cs_z = CubicSpline(t_ends,[z0,z1],bc_type=bc_type)
+        cs_x = CubicSpline(t_ends, [x0, x1], bc_type=bc_type)
+        cs_y = CubicSpline(t_ends, [y0, y1], bc_type=bc_type)
+        cs_z = CubicSpline(t_ends, [z0, z1], bc_type=bc_type)
 
         smooth_x = cs_x(times)
         smooth_y = cs_y(times)
         smooth_z = cs_z(times)
-        trajectory_xyz = np.column_stack((smooth_x,smooth_y,smooth_z))
-        trajectory = np.zeros((len(times)-1,7))
+        trajectory_xyz = np.column_stack((smooth_x, smooth_y, smooth_z))
+        trajectory = np.zeros((len(times) - 1, kinematics.dof))  # Use correct DOF
+
+        last_valid_joint = current_joint.copy()
 
         if end_R is None:
             R = start_R
-        
-            current_transform = kinematics._get_transform(R,start_point)
-            target_transform = current_transform
+            current_transform = kinematics._get_transform(R, start_point)
+            target_transform = current_transform.copy()
 
-            for i in range(len(times)-1):
-                target_transform[:3,-1] = trajectory_xyz[i+1]                           
-                current_joint = kinematics._inverse_kinematics(target_transform,current_joint)
-                trajectory[i] = current_joint
+            for i in range(len(times) - 1):
+                target_transform[:3, -1] = trajectory_xyz[i + 1]
+                joint_solution = kinematics._inverse_kinematics(target_transform, last_valid_joint)
+
+                if joint_solution is None:
+                    print(f"[WARN] IK failed at step {i}, reusing last joint config")
+                    trajectory[i] = last_valid_joint
+                else:
+                    trajectory[i] = joint_solution
+                    last_valid_joint = joint_solution
 
         else:
-            start_quaternion = utils._rotation_to_quaternion(start_R)
-            end_quaternion = utils._rotation_to_quaternion(end_R)
+            start_quat = utils._rotation_to_quaternion(start_R)
+            end_quat = utils._rotation_to_quaternion(end_R)
 
-            trajectory_R = np.zeros((3,3,len(times)+1))
+            trajectory_R = np.zeros((3, 3, len(times)))
             for i in range(len(times)):
-                current_t = times[i]
-                current_quaternion = utils._slerp(start_quaternion,end_quaternion,current_t/duration)
-                current_R = utils._quaternion_to_rotation(current_quaternion)
-                trajectory_R[:,:,i+1] = current_R
+                t_ratio = times[i] / duration
+                current_quat = utils._slerp(start_quat, end_quat, t_ratio)
+                current_R = utils._quaternion_to_rotation(current_quat)
+                trajectory_R[:, :, i] = current_R
 
-            current_transform = kinematics._get_transform(start_R,start_point)
-            target_transform = current_transform
+            current_transform = kinematics._get_transform(start_R, start_point)
+            target_transform = current_transform.copy()
 
-            for i in range(len(times)-1):
-                target_transform[:3,:3] = trajectory_R[:,:,i+1]
-                target_transform[:3,-1] = trajectory_xyz[i+1]                           
-                current_joint = kinematics._inverse_kinematics(target_transform,current_joint)
-                trajectory[i] = current_joint
-                
+            for i in range(len(times) - 1):
+                target_transform[:3, :3] = trajectory_R[:, :, i + 1]
+                target_transform[:3, -1] = trajectory_xyz[i + 1]
+                joint_solution = kinematics._inverse_kinematics(target_transform, last_valid_joint)
+
+                if joint_solution is None:
+                    print(f"[WARN] IK failed at step {i}, reusing last joint config")
+                    trajectory[i] = last_valid_joint
+                else:
+                    trajectory[i] = joint_solution
+                    last_valid_joint = joint_solution
+
         print(trajectory)
         return trajectory
+
     
     def follow_joint_trajectory(self, trajectory, send_motor_command):
         for joint_angles in trajectory:
-            for i, angle in enumerate(np.degrees(joint_angles)):
+            if joint_angles is None or np.any(np.isnan(joint_angles)):
+                continue  
+            for i, angle in enumerate(np.degrees(joint_angles[:5])):  
                 send_motor_command(i+1, angle, speed=1.0)
             time.sleep(self.dt)
