@@ -263,9 +263,6 @@ class TrajectoryGenerator:
                 
         print(trajectory)
         return trajectory
-
-
-    def get
     
     def follow_joint_trajectory(self, trajectory, send_motor_command):
         for joint_angles in trajectory:
