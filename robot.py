@@ -6,11 +6,11 @@ import utils
 class Robot:
     def __init__(self):
         self.dof = 5
-        self.l_0 = 0.089
-        self.l_1 = 0.254
-        self.l_2 = 0.33
-        self.l_3 = 0
-        self.l_4 = 0
+        self.l_0 = 0.0413
+        self.l_1 = 0.441
+        self.l_2 = 0.298
+        self.l_3 = 0.141
+        self.l_4 = 0.0826
 
     def forward_kinematics(self, thetas):
         dh_parameters = self._get_dh_parameters(thetas)
