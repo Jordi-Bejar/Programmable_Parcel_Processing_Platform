@@ -178,6 +178,21 @@ class Robot:
         ])
         return transform
 
+    def _get_camera_transformation(self, joint_angles, robot):
+    
+        ee_to_cam = np.eye(4)
+        ee_to_cam[:3, 3] = [0.0, 0.0, 0.05]  
+        theta = np.pi / 2
+        ee_to_cam[:3, :3] = np.array([
+            [1, 0, 0],
+            [0, np.cos(theta), -np.sin(theta)],
+            [0, np.sin(theta), np.cos(theta)]
+        ])
+
+        ee_pose = robot.forward_kinematics(joint_angles)[:, :, -1]
+        cam_in_base = ee_pose @ ee_to_cam
+        return cam_in_base
+
 class TrajectoryGenerator:
     def __init__(self, dt=0.02):
         self.dt = dt

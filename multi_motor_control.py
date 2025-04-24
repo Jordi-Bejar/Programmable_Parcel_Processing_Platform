@@ -103,6 +103,59 @@ def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_com
 #arduino.close()
 #print("Connection closed.")
 
+def pick_from_camera(pixel_uv, camera_matrix, ee_pose, z_const, robot, traj_gen, send_motor_command):
+    """
+    pixel_uv: (u, v) pixel coordinate from OpenCV detection
+    camera_matrix: 3x3 camera intrinsics
+    ee_pose: 4x4 end-effector pose in base frame (from FK or tracking)
+    z_const: depth of the object in camera frame (or plane assumption)
+    """
+    u, v = pixel_uv
+    fx = camera_matrix[0, 0]
+    fy = camera_matrix[1, 1]
+    cx = camera_matrix[0, 2]
+    cy = camera_matrix[1, 2]
+
+    x_cam = (u - cx) * z_const / fx
+    y_cam = (v - cy) * z_const / fy
+    z_cam = z_const
+    point_cam = np.array([x_cam, y_cam, z_cam, 1.0])
+
+    cam_in_base = robot._get_camera_transformation(joint_angles, robot)
+    target_pos = cam_in_base @ point_cam
+    target_pos = target_pos[:3]
+    print("[INFO] Target position in base frame:", target_pos)
+
+
+    lift_offset = np.array([0, 0, 0.05])
+    above_target = target_pos + lift_offset
+    R = cam_in_base[:3, :3]
+    seed = joint_angles
+    traj1 = traj_gen.generate_straight_line(start_point=robot.forward_kinematics(seed)[:3, 3, -1],
+                                            end_point=above_target,
+                                            current_joint=seed,
+                                            start_R=R,
+                                            duration=2)
+    traj_gen.follow_joint_trajectory(traj1, send_motor_command)
+
+    # 4. Go straight down to box
+    traj2 = traj_gen.generate_straight_line(start_point=above_target,
+                                            end_point=target_pos,
+                                            current_joint=traj1[-1],
+                                            start_R=R,
+                                            duration=1)
+    traj_gen.follow_joint_trajectory(traj2, send_motor_command)
+
+    #suction
+
+     # 5. Lift back up
+    traj3 = traj_gen.generate_straight_line(start_point=target_pos,
+                                            end_point=above_target,
+                                            current_joint=traj2[-1],
+                                            start_R=R,
+                                            duration=1)
+    traj_gen.follow_joint_trajectory(traj3, send_motor_command)
+
 def accumErrorTest():
     robot = Robot()
     traj_gen = TrajectoryGenerator()
@@ -152,6 +205,18 @@ def accumErrorTest():
 
     # while :
 
+def loopTest()
+    while True:
+        print("picking")
+        send_motor_command(1, 180, 1)
+        #suction
+        print("lifting")
+        send_motor_command(1, 180, 1)
+        print("moving")
+        send_motor_command(1, 180, 1)
+        print("lowering")
+        #let go
+        delay(1000)
 
 def weightVerTest():
     robot = Robot()
@@ -217,10 +282,13 @@ def pickPlaceTest():
         print("(moving)")
 
 
+
+
 # ========== MAIN FUNCTION ==========
 def main():
-    accumErrorTest()
+    # accumErrorTest()
     # Initialize robot & trajectory objects
+    loopTest()
     
 
 # ========== RUN MAIN ==========
