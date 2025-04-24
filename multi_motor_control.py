@@ -64,45 +64,6 @@ def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_com
 
     print("Completed full straight-line motion from pickup to dropoff.")
 
-# Example commands
-
-#send_motor_command(1, 180, 1.0)
-#send_motor_command(1, 90, 0.5)  # Move Motor 1, 90 degrees at 50% speed
-#time.sleep(1)
-#send_motor_command(2, 180, 1.0)  # Move Motor 2, 180 degrees at full speed
-#time.sleep(1)
-#send_motor_command(3, 360, 0.7)  # Move Motor 3, 45 degrees at 20% speed
-#time.sleep(1)
-#send_motor_command(4, 360, 0.5)  # Move Motor 4, full rotation at 80% speed
-#time.sleep(1)
-#send_motor_command(5, 360, 0.5)
-#send_motor_command(2, 3600, 1.0)
-#send_motor_command(3, 3600, 1.0)
-#time.sleep(2)
-#send_motor_command(1, 90, 1.0)
-#send_motor_command(4, -90, 1.0)
-#time.sleep(4)
-#send_motor_command(1, 3510, 1.0)
-#send_motor_command(4, 36090, 1.0)
-#time.sleep(4)
-#send_motor_command(5, -90, 1.0)
-#time.sleep(2)
-#send_motor_command(5, 36090, 1.0)
-
-#move_from_to(
-#     x_start=0.15,
-#     y_start=0.05,
-#     x_end=0.25,
-#     y_end=-0.05,
-#     robot=robot,
-#     traj_gen=traj_gen,
-#     send_motor_command=send_motor_command
-# )
-
-# Close serial connection
-#arduino.close()
-#print("Connection closed.")
-
 def pick_from_camera(pixel_uv, camera_matrix, ee_pose, z_const, robot, traj_gen, send_motor_command):
     """
     pixel_uv: (u, v) pixel coordinate from OpenCV detection
@@ -205,19 +166,6 @@ def accumErrorTest():
 
     # while :
 
-def loopTest()
-    while True:
-        print("picking")
-        send_motor_command(1, 180, 1)
-        #suction
-        print("lifting")
-        send_motor_command(1, 180, 1)
-        print("moving")
-        send_motor_command(1, 180, 1)
-        print("lowering")
-        #let go
-        delay(1000)
-
 def weightVerTest():
     robot = Robot()
     traj_gen = TrajectoryGenerator()
@@ -281,7 +229,57 @@ def pickPlaceTest():
         input()
         print("(moving)")
 
+def loopTest()
+    while True:
+        print("picking")
+        send_motor_command(1, 180, 1)
+        #suction
+        print("lifting")
+        send_motor_command(1, 180, 1)
+        print("moving")
+        send_motor_command(1, 180, 1)
+        print("lowering")
+        #let go
+        delay(1000)
 
+# Example commands
+
+#send_motor_command(1, 180, 1.0)
+#send_motor_command(1, 90, 0.5)  # Move Motor 1, 90 degrees at 50% speed
+#time.sleep(1)
+#send_motor_command(2, 180, 1.0)  # Move Motor 2, 180 degrees at full speed
+#time.sleep(1)
+#send_motor_command(3, 360, 0.7)  # Move Motor 3, 45 degrees at 20% speed
+#time.sleep(1)
+#send_motor_command(4, 360, 0.5)  # Move Motor 4, full rotation at 80% speed
+#time.sleep(1)
+#send_motor_command(5, 360, 0.5)
+#send_motor_command(2, 3600, 1.0)
+#send_motor_command(3, 3600, 1.0)
+#time.sleep(2)
+#send_motor_command(1, 90, 1.0)
+#send_motor_command(4, -90, 1.0)
+#time.sleep(4)
+#send_motor_command(1, 3510, 1.0)
+#send_motor_command(4, 36090, 1.0)
+#time.sleep(4)
+#send_motor_command(5, -90, 1.0)
+#time.sleep(2)
+#send_motor_command(5, 36090, 1.0)
+
+#move_from_to(
+#     x_start=0.15,
+#     y_start=0.05,
+#     x_end=0.25,
+#     y_end=-0.05,
+#     robot=robot,
+#     traj_gen=traj_gen,
+#     send_motor_command=send_motor_command
+# )
+
+# Close serial connection
+#arduino.close()
+#print("Connection closed.")
 
 
 # ========== MAIN FUNCTION ==========
