@@ -39,7 +39,7 @@ def move_from_to(x_start, y_start, x_end, y_end, robot, traj_gen, send_motor_com
     dropoff_z = 0.10       
     seed = np.zeros(robot.dof)
     R = np.eye(3)
-
+ 
     current_joint = seed
 
     # 1. Go to pickup pose
@@ -191,48 +191,50 @@ def weightVerTest():
     trajectory = traj_gen.generate_trapezoidal_trajectory(target_pose2, target_pose3, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
     traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
     print("Joint 4 test")
-    input()
-    
+    input() 
 
-def pickPlaceTest():
+def pickPlaceTest(num_boxes):
+
     robot = Robot()
     traj_gen = TrajectoryGenerator()
     seed = np.zeros(robot.dof)
     R = np.eye(3)
-    pickup = np.array([0.3, 0, 0.1])
-    drop = pickup + np.array([0, -0.2, 0])
-    lift_offset = np.array([0, 0, 0.05])
-    above_pickup = pickup + lift_offset
-    above_drop = drop + lift_offset
 
-    # Move to above pickup
-    traj1 = traj_gen.generate_straight_line(seed, above_pickup, seed, R, duration=2)
-    traj_gen.follow_joint_trajectory(traj1, send_motor_command)
-    current_joint = traj1[-1]
+    for i in range(num_boxes):
+        pickup = np.array([0.3, 0, 0.1])
+        drop = pickup + np.array([0, -0.2, 0]) + np.array([0.05 * i, 0, 0])
+        lift_offset = np.array([0, 0, 0.05])
+        above_pickup = pickup + lift_offset
+        above_drop = drop + lift_offset
 
-    # Move down to pickup
-    traj2 = traj_gen.generate_straight_line(above_pickup, pickup, current_joint, R, duration=1.5)
-    traj_gen.follow_joint_trajectory(traj2, send_motor_command)
-    current_joint = traj2[-1]
+        # Move to above pickup
+        traj1 = traj_gen.generate_straight_line(seed, above_pickup, seed, R, duration=2)
+        traj_gen.follow_joint_trajectory(traj1, send_motor_command)
+        current_joint = traj1[-1]
 
-    print("[ACTION] Pick up (TODO: trigger suction)")
+        # Move down to pickup
+        traj2 = traj_gen.generate_straight_line(above_pickup, pickup, current_joint, R, duration=1.5)
+        traj_gen.follow_joint_trajectory(traj2, send_motor_command)
+        current_joint = traj2[-1]
 
-    # Lift up
-    traj3 = traj_gen.generate_straight_line(pickup, above_pickup, current_joint, R, duration=1.5)
-    traj_gen.follow_joint_trajectory(traj3, send_motor_command)
-    current_joint = traj3[-1]
+        print("[ACTION] Pick up (TODO: trigger suction)")
 
-    # Move to above drop
-    traj4 = traj_gen.generate_straight_line(above_pickup, above_drop, current_joint, R, duration=2)
-    traj_gen.follow_joint_trajectory(traj4, send_motor_command)
-    current_joint = traj4[-1]
+        # Lift up
+        traj3 = traj_gen.generate_straight_line(pickup, above_pickup, current_joint, R, duration=1.5)
+        traj_gen.follow_joint_trajectory(traj3, send_motor_command)
+        current_joint = traj3[-1]
 
-    # Lower to drop
-    traj5 = traj_gen.generate_straight_line(above_drop, drop, current_joint, R, duration=1.5)
-    traj_gen.follow_joint_trajectory(traj5, send_motor_command)
-    current_joint = traj5[-1]
+        # Move to above drop
+        traj4 = traj_gen.generate_straight_line(above_pickup, above_drop, current_joint, R, duration=2)
+        traj_gen.follow_joint_trajectory(traj4, send_motor_command)
+        current_joint = traj4[-1]
 
-    print("[ACTION] Drop item (TODO: trigger suction release)")
+        # Lower to drop
+        traj5 = traj_gen.generate_straight_line(above_drop, drop, current_joint, R, duration=1.5)
+        traj_gen.follow_joint_trajectory(traj5, send_motor_command)
+        current_joint = traj5[-1]
+
+        print("[ACTION] Drop item (TODO: trigger suction release)")
 
 def loopTest()
     while True:
@@ -286,18 +288,12 @@ def loopTest()
 #arduino.close()
 #print("Connection closed.")
 
-
 # ========== MAIN FUNCTION ==========
 def main():
     # accumErrorTest()
     # Initialize robot & trajectory objects
     loopTest()
-
-    while True: 
-        pickPlaceTest()
-        delay(1000)
-        
-    
+    pickPlaceTest()
 
 # ========== RUN MAIN ==========
 if __name__ == "__main__":
