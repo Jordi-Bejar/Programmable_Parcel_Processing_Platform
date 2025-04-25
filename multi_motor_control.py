@@ -81,7 +81,7 @@ def pick_from_camera(pixel_uv, camera_matrix, ee_pose, z_const, robot, traj_gen,
     y_cam = (v - cy) * z_const / fy
     z_cam = z_const
     point_cam = np.array([x_cam, y_cam, z_cam, 1.0])
-
+    
     cam_in_base = robot._get_camera_transformation(joint_angles, robot)
     target_pos = cam_in_base @ point_cam
     target_pos = target_pos[:3]
@@ -156,10 +156,8 @@ def accumErrorTest():
 
         print("Returning to original pose. Joint state after reverse:")
         print(current_joint)
-        
+
 #def itemFragileTest():
-
-
 
     # Trajectory generation
     # trajectory = traj_gen.generate_trapezoidal_trajectory(seed, solution, traj_gen.max_vel, traj_gen.max_acc, duration=4.0)
@@ -204,7 +202,7 @@ def pickPlaceTest(num_boxes):
         pickup = np.array([0.3, 0, 0.1])
         drop = pickup + np.array([0, -0.2, 0]) + np.array([0.05 * i, 0, 0])
         lift_offset = np.array([0, 0, 0.05])
-        above_pickup = pickup + lift_offset
+        above_pickup = pickup + lift_offset 
         above_drop = drop + lift_offset
 
         # Move to above pickup
@@ -300,7 +298,7 @@ def main():
     # accumErrorTest()
     # Initialize robot & trajectory objects
     loopTest()
-    pickPlaceTest()
+    pickPlaceTest(3)
 
 # ========== RUN MAIN ==========
 if __name__ == "__main__":
