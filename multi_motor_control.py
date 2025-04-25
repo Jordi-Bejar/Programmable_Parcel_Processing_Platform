@@ -236,6 +236,13 @@ def pickPlaceTest(num_boxes):
 
         print("[ACTION] Drop item (TODO: trigger suction release)")
 
+def smile()
+    send_motor_command(5, -30, 1)
+    send_motor_command(5, 30, 1)
+    send_motor_command(5, -30, 1)
+    send_motor_command(5, 30, 1)
+    send_motor_command(5, -30, 1)
+
 def loopTest()
     while True:
         print("picking")
