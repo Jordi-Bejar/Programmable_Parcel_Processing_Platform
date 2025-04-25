@@ -156,6 +156,7 @@ def accumErrorTest():
 
         print("Returning to original pose. Joint state after reverse:")
         print(current_joint)
+        
 #def itemFragileTest():
 
 
@@ -194,40 +195,44 @@ def weightVerTest():
     
 
 def pickPlaceTest():
-    target_pose1 = np.eye(4)
-    target_pose1[:3, 3] = [0.3, 0, 0.1]  # Desired XYZ position of end-effector (example)
+    robot = Robot()
+    traj_gen = TrajectoryGenerator()
+    seed = np.zeros(robot.dof)
+    R = np.eye(3)
+    pickup = np.array([0.3, 0, 0.1])
+    drop = pickup + np.array([0, -0.2, 0])
+    lift_offset = np.array([0, 0, 0.05])
+    above_pickup = pickup + lift_offset
+    above_drop = drop + lift_offset
 
-    trajectory = traj_gen.generate_trapezoidal_trajectory(seed, target_pose1, traj_gen.max_vel, traj_gen.max_acc, duration=2.0)
-    traj_gen.follow_joint_trajectory(trajectory, send_motor_command)
+    # Move to above pickup
+    traj1 = traj_gen.generate_straight_line(seed, above_pickup, seed, R, duration=2)
+    traj_gen.follow_joint_trajectory(traj1, send_motor_command)
+    current_joint = traj1[-1]
 
-    while True:
+    # Move down to pickup
+    traj2 = traj_gen.generate_straight_line(above_pickup, pickup, current_joint, R, duration=1.5)
+    traj_gen.follow_joint_trajectory(traj2, send_motor_command)
+    current_joint = traj2[-1]
 
-        move_from_to(
-            x_start=0.3,
-            y_start=0,
-            x_end=0.6,
-            y_end=0,
-            robot=robot,
-            traj_gen=traj_gen,
-            send_motor_command=send_motor_command
-        )
-        print("(waiting)")
-        input()
-        print("(moving)")
+    print("[ACTION] Pick up (TODO: trigger suction)")
 
-        move_from_to(
-            x_start=0.6,
-            y_start=0,
-            x_end=0.3,
-            y_end=0,
-            robot=robot,
-            traj_gen=traj_gen,
-            send_motor_command=send_motor_command
-        )
+    # Lift up
+    traj3 = traj_gen.generate_straight_line(pickup, above_pickup, current_joint, R, duration=1.5)
+    traj_gen.follow_joint_trajectory(traj3, send_motor_command)
+    current_joint = traj3[-1]
 
-        print("(waiting)")
-        input()
-        print("(moving)")
+    # Move to above drop
+    traj4 = traj_gen.generate_straight_line(above_pickup, above_drop, current_joint, R, duration=2)
+    traj_gen.follow_joint_trajectory(traj4, send_motor_command)
+    current_joint = traj4[-1]
+
+    # Lower to drop
+    traj5 = traj_gen.generate_straight_line(above_drop, drop, current_joint, R, duration=1.5)
+    traj_gen.follow_joint_trajectory(traj5, send_motor_command)
+    current_joint = traj5[-1]
+
+    print("[ACTION] Drop item (TODO: trigger suction release)")
 
 def loopTest()
     while True:
@@ -287,6 +292,11 @@ def main():
     # accumErrorTest()
     # Initialize robot & trajectory objects
     loopTest()
+
+    while True: 
+        pickPlaceTest()
+        delay(1000)
+        
     
 
 # ========== RUN MAIN ==========

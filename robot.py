@@ -11,7 +11,7 @@ class Robot:
         self.l_2 = 0.298
         self.l_3 = 0.141
         self.l_4 = 0.0826
-
+    
     def forward_kinematics(self, thetas):
         dh_parameters = self._get_dh_parameters(thetas)
         frames = np.zeros((4, 4, len(dh_parameters)+1))
